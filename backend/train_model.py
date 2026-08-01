@@ -1,89 +1,20 @@
-import pandas as pd
 import pickle
 
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
-
-print("Loading datasets...")
-
-# -----------------------------
-# Read datasets
-# -----------------------------
-movies = pd.read_csv("data/raw/movies.csv")
-tags = pd.read_csv("data/raw/tags.csv")
-
-print("Datasets loaded successfully.")
-
-# -----------------------------
-# Group tags by movieId
-# -----------------------------
-tag_data = (
-    tags.groupby("movieId")["tag"]
-    .apply(lambda x: " ".join(x))
-    .reset_index()
+from recommendation.preprocessing import (
+    load_data,
+    preprocess
 )
 
-print("Tags grouped successfully.")
+from recommendation.trainer import train
 
-# -----------------------------
-# Merge movies and tags
-# -----------------------------
-movie_data = movies.merge(
-    tag_data,
-    on="movieId",
-    how="left"
-)
 
-print("Datasets merged.")
+movies, tags = load_data()
 
-# -----------------------------
-# Fill missing tags
-# -----------------------------
-movie_data["tag"] = movie_data["tag"].fillna("")
+movie_data = preprocess(movies, tags)
 
-print("Missing values handled.")
+vectorizer, feature_matrix, similarity_matrix = train(movie_data)
 
-# -----------------------------
-# Replace | with spaces
-# -----------------------------
-movie_data["genres"] = movie_data["genres"].str.replace(
-    "|",
-    " ",
-    regex=False
-)
 
-# -----------------------------
-# Create features column
-# -----------------------------
-movie_data["features"] = (
-    movie_data["genres"] +
-    " " +
-    movie_data["tag"]
-)
-
-print("Feature column created.")
-
-# -----------------------------
-# Vectorization
-# -----------------------------
-vectorizer = CountVectorizer(stop_words="english")
-
-feature_matrix = vectorizer.fit_transform(
-    movie_data["features"]
-)
-
-print("Vectorization completed.")
-
-# -----------------------------
-# Cosine Similarity
-# -----------------------------
-similarity_matrix = cosine_similarity(feature_matrix)
-
-print("Similarity matrix created.")
-
-# -----------------------------
-# Save trained objects
-# -----------------------------
 pickle.dump(
     movie_data,
     open("backend/models/movie_data.pkl", "wb")
@@ -104,7 +35,4 @@ pickle.dump(
     open("backend/models/similarity_matrix.pkl", "wb")
 )
 
-print("\n===================================")
-print("Model training completed!")
-print("Files saved in backend/models/")
-print("===================================")
+print("Training Complete!")
