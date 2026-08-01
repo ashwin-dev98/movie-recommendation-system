@@ -25,3 +25,5 @@ __pycache__/
 
 # Trained models
 backend/models/*.pkl
+
+backend/.env

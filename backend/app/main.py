@@ -1,43 +1,42 @@
-from fastapi import FastAPI
+import logging
 
-from backend.recommendation.loader import load_models
-from backend.recommendation.recommender import recommend
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from backend.app.api.routes import router
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(message)s"
+)
+
+logger = logging.getLogger(__name__)
+
+logger.info("Starting Movie Recommendation API...")
 
 app = FastAPI(
     title="Movie Recommendation API",
-    description="Content-Based Movie Recommendation System",
+    description="Content-Based Movie Recommendation System built using FastAPI and Scikit-Learn",
     version="1.0.0"
 )
 
-print("Loading ML models...")
+app.add_middleware(
 
-movie_data, vectorizer, similarity_matrix = load_models()
+    CORSMiddleware,
 
-print("Models loaded successfully!")
+    allow_origins=[
+        "http://localhost:5173"
+    ],
 
+    allow_credentials=True,
 
-@app.get("/")
-def home():
-    return {
-        "message": "Movie Recommendation API is running!"
-    }
+    allow_methods=["*"],
 
+    allow_headers=["*"]
 
-@app.get("/recommend")
-def get_recommendations(movie: str):
+)
 
-    recommendations = recommend(
-        movie,
-        movie_data,
-        similarity_matrix
-    )
+# Register API routes
+app.include_router(router)
 
-    if recommendations is None:
-        return {
-            "error": "Movie not found."
-        }
-
-    return {
-        "movie": movie,
-        "recommendations": recommendations
-    }
+logger.info("API started successfully.")
